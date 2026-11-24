@@ -71,11 +71,8 @@ theorem aeval_sub_mem {I : Ideal R} {x : R} (hx : x ∈ I) {p q : Polynomial O} 
   exact Ideal.mul_mem_right _ _ (Ideal.pow_mem_pow hx n)
 
 theorem eq_of_sub_mem_pow (I : Ideal R) [IsHausdorff I R] {a b : R} (h : ∀ n, a - b ∈ I ^ n) : a = b := by
-  apply sub_eq_zero.mp
-  apply IsHausdorff.haus ‹IsHausdorff I R› (a - b)
-  intro n
-  rw [SModEq.zero, smul_eq_mul, Ideal.mul_top]
-  exact h n
+  exact (IsHausdorff.eq_iff_smodEq (I := I)).2 fun n => by
+    simpa only [SModEq.sub_mem, smul_eq_mul, Ideal.mul_top] using h n
 
 theorem exists_lim (I : Ideal R) [IsAdicComplete I R] (x : I) (f : O⟦X⟧) :
     ∃ y : R, ∀ n, y - Polynomial.aeval (x : R) (trunc n f) ∈ I ^ n := by
