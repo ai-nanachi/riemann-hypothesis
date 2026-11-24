@@ -72,12 +72,8 @@ theorem finite_setOf_mem_of_orthonormal {ι : Type*} {v : ι → E} (hv : Orthon
 
 theorem isClosed_eigenspace (T : E →L[𝕜] E) (μ : 𝕜) :
     IsClosed (eigenspace (T : E →ₗ[𝕜] E) μ : Set E) := by
-  have : (eigenspace (T : E →ₗ[𝕜] E) μ : Set E) =
-      (T - μ • ContinuousLinearMap.id 𝕜 E) ⁻¹' {0} := by
-    ext x
-    simp [sub_eq_zero]
-  rw [this]
-  exact isClosed_singleton.preimage (map_continuous _)
+  rw [eigenspace_def]
+  exact (T - μ • ContinuousLinearMap.id 𝕜 E).isClosed_ker
 
 section HilbertBasis
 
@@ -95,25 +91,19 @@ theorem exists_hilbertBasis_subset_iUnion {α : Type*} (W : α → Submodule �
   have hv : Orthonormal 𝕜 v :=
     hW.orthonormal_sigma_orthonormal (v_family := fun a => ((↑) : w a → W a))
       (fun a => by rw [← hb a]; exact (b a).orthonormal)
-  have hkey : ∀ a, (W a : Set E) ⊆ closure (span 𝕜 (Set.range v) : Set E) := by
-    intro a y hy
-    let y' : W a := ⟨y, hy⟩
-    have h := (W a).subtypeL.hasSum ((b a).hasSum_repr y')
-    refine mem_closure_of_tendsto h (Eventually.of_forall fun t => ?_)
-    refine Submodule.sum_mem _ fun i _ => ?_
-    simp only [map_smul]
-    refine Submodule.smul_mem _ _ (subset_span ⟨⟨a, i⟩, ?_⟩)
-    simp [v, hb a]
   have hle : (⨆ a, W a) ≤ (span 𝕜 (Set.range v))ᗮᗮ := by
-    rw [Submodule.orthogonal_orthogonal_eq_closure, iSup_le_iff]
-    intro a y hy
-    rw [← SetLike.mem_coe, Submodule.topologicalClosure_coe]
-    exact hkey a hy
+    rw [Submodule.orthogonal_orthogonal_eq_closure]
+    refine iSup_le fun a => ?_
+    have h := (span 𝕜 (Set.range (b a))).topologicalClosure_map (W a).subtypeL
+    rw [(b a).dense_span, Submodule.toLinearMap_subtypeL, Submodule.map_subtype_top,
+      Submodule.map_span] at h
+    refine h.trans (Submodule.topologicalClosure_mono (Submodule.span_mono ?_))
+    rintro _ ⟨_, ⟨i, rfl⟩, rfl⟩
+    exact ⟨⟨a, i⟩, by simp [v, hb a]⟩
   have hspan : (span 𝕜 (Set.range v))ᗮ = ⊥ := by
     rw [eq_bot_iff, ← hbot, ← Submodule.triorthogonal_eq_orthogonal]
     exact Submodule.orthogonal_le hle
-  have hinj : Function.Injective v := hv.linearIndependent.injective
-  have hv' : Orthonormal 𝕜 ((↑) : Set.range v → E) := (orthonormal_subtype_range hinj).2 hv
+  have hv' := (orthonormal_subtype_range hv.linearIndependent.injective).2 hv
   have hspan' : (span 𝕜 (Set.range ((↑) : Set.range v → E)))ᗮ = ⊥ := by
     rwa [Subtype.range_coe]
   refine ⟨Set.range v, HilbertBasis.mkOfOrthogonalEqBot hv' hspan',
