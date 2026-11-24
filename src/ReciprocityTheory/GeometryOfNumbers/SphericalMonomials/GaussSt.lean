@@ -158,17 +158,14 @@ theorem integral_conj_pow_mul_pow_mul_exp_of_ne {a b : ℕ} (hab : a ≠ b) (t :
 theorem integral_norm_pow_mul_exp (a : ℕ) {t : ℝ} (ht : 0 < t) :
     ∫ z : ℂ, ‖z‖ ^ (a + a) * Real.exp (-(t * ‖z‖ ^ 2)) =
       Real.pi * (a.factorial : ℝ) / t ^ (a + 1) := by
-  apply Complex.ofReal_injective
-  rw [← integral_complex_ofReal]
-  have e : (fun z : ℂ => ((‖z‖ ^ (a + a) * Real.exp (-(t * ‖z‖ ^ 2)) : ℝ) : ℂ)) =
-      fun z : ℂ => starRingEnd ℂ (z ^ a) * z ^ a * (Real.exp (-(t * ‖z‖ ^ 2)) : ℂ) := by
-    funext z
-    rw [Complex.conj_mul', norm_pow]
-    push_cast; ring
-  rw [e, integral_conj_pow_mul_pow_mul_exp_eq_polar, integral_Ioi_pow_mul_exp_neg_mul_sq a ht, integral_exp_mul_I_self]
-  have : t ^ (a + 1) ≠ 0 := by positivity
-  push_cast
-  field_simp
+  have h := Complex.integral_rpow_mul_exp_neg_mul_rpow (p := 2) (q := ((a + a : ℕ) : ℝ))
+    (by norm_num) ((by norm_num : (-2 : ℝ) < 0).trans_le (Nat.cast_nonneg _)) ht
+  have harg : (((a + a : ℕ) : ℝ) + 2) / 2 = (a : ℝ) + 1 := by push_cast; ring
+  rw [neg_div, harg, Real.Gamma_nat_eq_factorial, ← Nat.cast_succ, Real.rpow_neg ht.le,
+    Real.rpow_natCast] at h
+  simp only [Real.rpow_natCast, Real.rpow_two, neg_mul, Nat.succ_eq_add_one] at h
+  rw [h]
+  ring
 
 theorem gs_prod {N : ℕ} (a b : Fin N → ℕ) (t : ℝ) (z : Fin N → ℂ) :
     starRingEnd ℂ (monoC a z) * monoC b z * (Real.exp (-(t * sqN z)) : ℂ) =
