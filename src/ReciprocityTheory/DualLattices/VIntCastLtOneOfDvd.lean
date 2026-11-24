@@ -4,6 +4,7 @@ public import Mathlib.Algebra.Field.ZMod
 public import Mathlib.Basic.NNReal.Defs
 public import Mathlib.FieldTheory.IsAlgClosed.Basic
 public import Mathlib.RingTheory.RootsOfUnity.PrimitiveRoots
+import Mathlib.RingTheory.RootsOfUnity.AlgebraicallyClosed
 public import Mathlib.RingTheory.Valuation.Integers
 import Mathlib.Algebra.Order.Floor.Extended
 import Mathlib.Algebra.Order.Floor.Semifield
@@ -179,18 +180,10 @@ theorem exists_teich [IsAlgClosed C] (hv : v.Integers R) (hpv : v (p : C) < 1) (
     exact this
   have hmon : (Polynomial.X ^ p - Polynomial.X : Polynomial C).Monic :=
     Polynomial.monic_X_pow_sub (by rw [Polynomial.degree_X]; exact_mod_cast hp.out.one_lt)
-  have heq : (Polynomial.X ^ p - Polynomial.X : Polynomial C) =
-      ((Polynomial.X ^ p - Polynomial.X : Polynomial C).roots.map (fun a => Polynomial.X - Polynomial.C a)).prod := by
-    first
-    | (have hc := Polynomial.C_leadingCoeff_mul_prod_multiset_X_sub_C
-          (Polynomial.splits_iff_card_roots.mp (IsAlgClosed.splits (Polynomial.X ^ p - Polynomial.X : Polynomial C)))
-       rw [hmon.leadingCoeff, map_one, one_mul] at hc
-       exact hc.symm)
   have heval : (n : C) ^ p - n =
       ((Polynomial.X ^ p - Polynomial.X : Polynomial C).roots.map (fun a => (n : C) - a)).prod := by
-    have := congrArg (Polynomial.eval (n : C)) heq
-    rw [Polynomial.eval_multiset_prod, Multiset.map_map] at this
-    simpa [Function.comp_def] using this
+    simpa only [Polynomial.eval_sub, Polynomial.eval_pow, Polynomial.eval_X] using
+      (IsAlgClosed.splits _).eval_eq_prod_roots_of_monic hmon (n : C)
   by_contra hno
   push_neg at hno
   have hge : 1 ≤ v ((n : C) ^ p - n) := by
@@ -262,13 +255,8 @@ theorem exists_teichChar [IsAlgClosed C] (hv : v.Integers R) (hpv : v (p : C) < 
     exact lt_irrefl _ h1
 
 theorem exists_primRoot [IsAlgClosed C] [CharZero C] : ∃ ζ : C, IsPrimitiveRoot ζ p := by
-  haveI : NeZero (p : C) := ⟨Nat.cast_ne_zero.mpr hp.out.ne_zero⟩
-  obtain ⟨ζ, hζ⟩ := IsAlgClosed.exists_root (Polynomial.cyclotomic p C) (by
-    rw [Polynomial.degree_cyclotomic, Nat.totient_prime hp.out]
-    have := hp.out.two_le
-    norm_cast
-    omega)
-  exact ⟨ζ, Polynomial.isRoot_cyclotomic_iff.mp hζ⟩
+  have : NeZero (p : C) := ⟨Nat.cast_ne_zero.mpr hp.out.ne_zero⟩
+  exact HasEnoughRootsOfUnity.exists_isPrimitiveRoot C p
 
 theorem val_sub_one_le {α β : C} (hα : IsPrimitiveRoot α p) (hβ : IsPrimitiveRoot β p) :
     v (α - 1) ≤ v (β - 1) := by
