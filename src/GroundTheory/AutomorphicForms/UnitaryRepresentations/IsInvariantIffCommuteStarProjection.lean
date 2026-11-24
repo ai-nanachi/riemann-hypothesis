@@ -135,32 +135,19 @@ theorem IsInvariant.orthogonal {V : Submodule ℂ H} (hV : π.IsInvariant V) :
 theorem IsInvariant.topologicalClosure {V : Submodule ℂ H} (hV : π.IsInvariant V) :
     π.IsInvariant V.topologicalClosure := by
   intro g v hv
-  have hsub : Set.MapsTo (π g) (V : Set H) (V.topologicalClosure : Set H) :=
-    fun x hx => V.le_topologicalClosure (hV g x hx)
-  have hv' : v ∈ closure (V : Set H) := by
-    rwa [← Submodule.topologicalClosure_coe]
-  have := hsub.closure (π g).continuous hv'
-  rwa [V.isClosed_topologicalClosure.closure_eq] at this
+  have h := Submodule.topologicalClosure_mem_invtSubmodule (f := π g)
+    ((Module.End.mem_invtSubmodule_iff_forall_mem_of_mem (π g).toLinearMap).2 (hV g))
+  exact (Module.End.mem_invtSubmodule_iff_forall_mem_of_mem (π g).toLinearMap).1 h v hv
 
 theorem isInvariant_iff_commute_starProjection (V : Submodule ℂ H) [V.HasOrthogonalProjection] :
     π.IsInvariant V ↔ ∀ g, Commute (π g) V.starProjection := by
-  constructor
-  · intro hV g
-    ext v
-    have hdec : v = V.starProjection v + (v - V.starProjection v) := by abel
-    have hq : v - V.starProjection v ∈ Vᗮ := V.sub_starProjection_mem_orthogonal v
-    have hp : V.starProjection v ∈ V := V.starProjection_apply_mem v
-    have e1 : V.starProjection (π g v) = π g (V.starProjection v) := by
-      conv_lhs => rw [hdec, map_add (f := _), map_add (f := _),
-        Submodule.starProjection_eq_self_iff.mpr (hV g _ hp),
-        (V.starProjection_apply_eq_zero_iff).mpr (hV.orthogonal g _ hq), add_zero]
-    exact e1.symm
-  · intro h g v hv
-    rw [← Submodule.starProjection_eq_self_iff] at hv ⊢
-    have : π g (V.starProjection v) = V.starProjection (π g v) :=
-      congrArg (fun T : H →L[ℂ] H => T v) (h g)
-    rw [← this, hv]
-
+  have h (g : G) : Commute (π g) V.starProjection ↔
+      (∀ v ∈ V, π g v ∈ V) ∧ ∀ v ∈ Vᗮ, π g v ∈ Vᗮ := by
+    rw [Commute.symm_iff, ContinuousLinearMap.IsIdempotentElem.commute_iff
+      V.isIdempotentElem_starProjection]
+    simp only [Submodule.range_starProjection, Submodule.ker_starProjection,
+      Module.End.mem_invtSubmodule_iff_forall_mem_of_mem, ContinuousLinearMap.coe_coe]
+  exact ⟨fun hv g => (h g).2 ⟨hv g, hv.orthogonal g⟩, fun hc g => ((h g).1 (hc g)).1⟩
 
 variable (π) in
 def intertwiners (σ : UnitaryRep G K) : Submodule ℂ (H →L[ℂ] K) where
