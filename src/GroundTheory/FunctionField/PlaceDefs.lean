@@ -55,6 +55,7 @@ public import Mathlib.Algebra.BigOperators.Field
 public import Mathlib.FieldTheory.IntermediateField.Adjoin.Algebra
 public import Mathlib.FieldTheory.IntermediateField.Adjoin.Basic
 public import Mathlib.RingTheory.AlgebraicIndependent.TranscendenceBasis
+import Mathlib.RingTheory.Valuation.Discrete.IsDiscreteValuationRing
 
 @[expose] public section
 
@@ -437,14 +438,8 @@ noncomputable def valuation : Valuation K ℤᵐ⁰ := v.heightOneSpectrum.valua
 theorem valuation_le_one_iff (x : K) : v.valuation x ≤ 1 ↔ x ∈ v.ring := by
   constructor
   · intro h
-    by_contra hx
-    have hx0 : x ≠ 0 := fun h0 => hx (h0 ▸ v.ring.zero_mem)
-    have hinv : x⁻¹ ∈ v.ring.nonunits := v.ring.inv_mem_nonunits_iff.2 (Or.inr hx)
-    obtain ⟨hr, hrm⟩ := v.ring.mem_nonunits_iff_exists_mem_maximalIdeal.1 hinv
-    have hlt : v.valuation x⁻¹ < 1 :=
-      (v.heightOneSpectrum.valuation_lt_one_iff_mem (K := K) ⟨x⁻¹, hr⟩).2 hrm
-    rw [map_inv₀, inv_lt_one₀ (zero_lt_iff.2 ((Valuation.ne_zero_iff _).2 hx0))] at hlt
-    exact absurd h (not_le.2 hlt)
+    obtain ⟨y, rfl⟩ := IsDiscreteValuationRing.exists_lift_of_le_one (A := v.ring) (K := K) h
+    exact y.2
   · intro hx
     exact v.heightOneSpectrum.valuation_le_one (K := K) (⟨x, hx⟩ : v.ring)
 
@@ -480,24 +475,14 @@ theorem ord_mul {x y : K} (hx : x ≠ 0) (hy : y ≠ 0) : v.ord (x * y) = v.ord 
   ring
 
 theorem ord_inv (x : K) : v.ord x⁻¹ = -v.ord x := by
-  by_cases hx : x = 0
-  · simp [hx]
-  have h := v.ord_mul (inv_ne_zero hx) hx
-  rw [inv_mul_cancel₀ hx, ord_one] at h
-  omega
+  simp only [ord, map_inv₀, WithZero.log_inv]
 
 theorem ord_div {x y : K} (hx : x ≠ 0) (hy : y ≠ 0) : v.ord (x / y) = v.ord x - v.ord y := by
   rw [div_eq_mul_inv, v.ord_mul hx (inv_ne_zero hy), ord_inv]
   ring
 
 theorem ord_pow (x : K) (n : ℕ) : v.ord (x ^ n) = n * v.ord x := by
-  by_cases hx : x = 0
-  · rcases n.eq_zero_or_pos with rfl | hn
-    · simp
-    · simp [hx, zero_pow hn.ne']
-  induction n with
-  | zero => simp
-  | succ n ih => rw [pow_succ, v.ord_mul (pow_ne_zero _ hx) hx, ih]; push_cast; ring
+  simp only [ord, map_pow, WithZero.log_pow, nsmul_eq_mul, mul_neg]
 
 theorem ord_nonneg_iff {x : K} (hx : x ≠ 0) : 0 ≤ v.ord x ↔ x ∈ v.ring := by
   rw [← v.valuation_le_one_iff, v.valuation_eq_exp_neg_ord hx, ← WithZero.exp_zero,
