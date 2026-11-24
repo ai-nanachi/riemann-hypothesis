@@ -520,18 +520,7 @@ theorem exists_conj_of_equiv {x y : GL (Fin n) F}
 
 theorem finite_monic_dvd {f : F[X]} (hf : f ≠ 0) : {g : F[X] | g.Monic ∧ g ∣ f}.Finite := by
   classical
-  refine Set.Finite.of_finite_image (f := UniqueFactorizationMonoid.normalizedFactors) ?_ ?_
-  · refine (UniqueFactorizationMonoid.normalizedFactors f).powerset.toFinset.finite_toSet.subset ?_
-    rintro _ ⟨g, ⟨hgm, hgf⟩, rfl⟩
-    rw [Finset.mem_coe, Multiset.mem_toFinset, Multiset.mem_powerset]
-    exact (UniqueFactorizationMonoid.dvd_iff_normalizedFactors_le_normalizedFactors
-      hgm.ne_zero hf).1 hgf
-  · rintro g₁ ⟨hg₁, -⟩ g₂ ⟨hg₂, -⟩ h
-    refine eq_of_monic_of_associated hg₁ hg₂ ?_
-    have a₁ := UniqueFactorizationMonoid.prod_normalizedFactors hg₁.ne_zero
-    have a₂ := UniqueFactorizationMonoid.prod_normalizedFactors hg₂.ne_zero
-    rw [h] at a₁
-    exact a₁.symm.trans a₂
+  exact Set.finite_coe_iff.1 (@Finite.of_fintype _ (Polynomial.fintypeSubtypeMonicDvd f hf))
 
 theorem exists_countable_conj_charpoly (f : F[X]) :
     ∃ s : Set (GL (Fin n) F), s.Countable ∧ ∀ x : GL (Fin n) F,
