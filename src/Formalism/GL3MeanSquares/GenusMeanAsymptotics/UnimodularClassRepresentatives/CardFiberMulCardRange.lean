@@ -54,6 +54,8 @@ public import Mathlib.Data.Set.Finite.Range
 public import Mathlib.GroupTheory.Coset.Card
 public import Mathlib.GroupTheory.QuotientGroup.Basic
 public import Mathlib.RingTheory.Ideal.Maps
+import Mathlib.GroupTheory.Index
+import Mathlib.SetTheory.Cardinal.NatCard
 
 @[expose] public section
 
@@ -62,41 +64,17 @@ namespace Formalism.HermitianLattices.Ext.L3.NormLifting
 theorem card_fiber_mul_card_range {G H : Type*} [AddCommGroup G] [AddCommGroup H]
     (f : G →+ H) (h : H) (hh : h ∈ f.range) :
     Nat.card {g : G // f g = h} * Nat.card f.range = Nat.card G := by
-
-  obtain ⟨g0, hg0⟩ := hh
-  have e1 : {g : G // f g = h} ≃ f.ker :=
-    { toFun := fun g => ⟨g.1 - g0, by rw [AddMonoidHom.mem_ker, map_sub, g.2, hg0, sub_self]⟩
-      invFun := fun k => ⟨k.1 + g0, by rw [map_add (f := _), (AddMonoidHom.mem_ker).mp k.2, hg0, zero_add]⟩
-      left_inv := fun g => by ext; simp
-      right_inv := fun k => by ext; simp }
-  rw [Nat.card_congr e1, ← Nat.card_congr (QuotientAddGroup.quotientKerEquivRange f).toEquiv, mul_comm]
-  exact (AddSubgroup.card_eq_card_quotient_mul_card_addSubgroup f.ker).symm
+  obtain ⟨a, rfl⟩ := hh
+  have e : {g : G // f g = f a} ≃ f.ker := f.fiberEquivKer a
+  rw [Nat.card_congr e]
+  exact AddSubgroup.card_ker_mul_card_range f
 
 theorem card_eq_mul_of_fibers {X Y : Type*} [Finite X] (f : X → Y) (c : ℕ)
     (hc : ∀ y, Nat.card {x : X // f x = y} = c) : Nat.card X = c * Nat.card Y := by
-
-  classical
-  by_cases hY : Finite Y
-  · haveI := Fintype.ofFinite Y
-    haveI := Fintype.ofFinite X
-    rw [← Nat.card_congr (Equiv.sigmaFiberEquiv f), Nat.card_sigma,
-      Finset.sum_congr rfl (fun y _ => hc y), Finset.sum_const, Finset.card_univ, smul_eq_mul,
-      Nat.card_eq_fintype_card (α := Y), mul_comm]
-  · haveI : Infinite Y := not_finite_iff_infinite.mp hY
-    rw [Nat.card_eq_zero_of_infinite (α := Y), mul_zero]
-    obtain ⟨y, hy⟩ := (Set.finite_range f).infinite_compl.nonempty
-    have hc0 : c = 0 := by
-      rw [← hc y, Nat.card_eq_zero]
-      left
-      exact ⟨fun x => hy ⟨x.1, x.2⟩⟩
-    rw [Nat.card_eq_zero]
-    left
-    refine ⟨fun x => ?_⟩
-    have h1 := hc (f x)
-    rw [hc0, Nat.card_eq_zero] at h1
-    rcases h1 with h1 | h1
-    · exact h1.false ⟨x, rfl⟩
-    · exact absurd (inferInstance : Finite {x' : X // f x' = f x}) (not_finite_iff_infinite.mpr h1)
+  let e : (Σ y, {x : X // f x = y}) ≃ Y × Fin c :=
+    Equiv.sigmaEquivProdOfEquiv fun y => Finite.equivFinOfCardEq (hc y)
+  rw [← Nat.card_congr (Equiv.sigmaFiberEquiv f), Nat.card_congr e,
+    Nat.card_prod, Nat.card_fin, mul_comm]
 
 section Inv
 
