@@ -1,6 +1,7 @@
 module
 
 public import GroundTheory.ProfiniteCohomology.DiscreteModules
+import Mathlib.RepresentationTheory.Stabilizer
 public import Mathlib.CategoryTheory.ObjectProperty.EpiMono
 public import Mathlib.Combinatorics.Quiver.ReflQuiver
 public import Mathlib.RepresentationTheory.Invariants
@@ -66,22 +67,16 @@ section Stabilizer
 
 variable {V : Type*} [AddCommGroup V] [Module k V] (ρ : Representation k G V)
 
-theorem stabilizer_zero : stabilizer ρ 0 = ⊤ := by
-  ext g
-  simp
+theorem stabilizer_zero : stabilizer ρ 0 = ⊤ :=
+  Representation.stabilizer_zero ρ
 
 theorem inf_le_stabilizer_add (a b : V) :
-    stabilizer ρ a ⊓ stabilizer ρ b ≤ stabilizer ρ (a + b) := by
-  intro g hg
-  rw [Subgroup.mem_inf] at hg
-  simp only [mem_stabilizer] at *
-  rw [map_add (f := _), hg.1, hg.2]
+    stabilizer ρ a ⊓ stabilizer ρ b ≤ stabilizer ρ (a + b) :=
+  Representation.le_stabilizer_add ρ a b
 
 theorem stabilizer_le_stabilizer_smul (r : k) (a : V) :
-    stabilizer ρ a ≤ stabilizer ρ (r • a) := by
-  intro g hg
-  simp only [mem_stabilizer] at *
-  rw [map_smul, hg]
+    stabilizer ρ a ≤ stabilizer ρ (r • a) :=
+  Representation.le_stabilizer_smul ρ r a
 
 theorem stabilizer_eq_top_of_isTrivial [ρ.IsTrivial] (a : V) : stabilizer ρ a = ⊤ := by
   ext g
@@ -90,10 +85,8 @@ theorem stabilizer_eq_top_of_isTrivial [ρ.IsTrivial] (a : V) : stabilizer ρ a 
 end Stabilizer
 
 theorem stabilizer_le_stabilizer_hom {A B : Rep.{w} k G} (f : A ⟶ B) (a : A) :
-    stabilizer A.ρ a ≤ stabilizer B.ρ (f.hom a) := by
-  intro g hg
-  simp only [mem_stabilizer] at *
-  rw [← Rep.hom_comm_apply, hg]
+    stabilizer A.ρ a ≤ stabilizer B.ρ (f.hom a) :=
+  Representation.IntertwiningMap.stabilizer_le f.hom a
 
 theorem stabilizer_hom_of_injective {A B : Rep.{w} k G} (f : A ⟶ B)
     (hf : Function.Injective f.hom) (a : A) :

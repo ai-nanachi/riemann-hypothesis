@@ -1,6 +1,7 @@
 module
 
 public import Mathlib.RepresentationTheory.Coinduced
+import Mathlib.RepresentationTheory.Stabilizer
 public import Mathlib.Topology.Defs.Basic
 import Mathlib.Algebra.Order.Floor.Extended
 import Mathlib.Algebra.Order.Floor.Semifield
@@ -56,15 +57,9 @@ variable {k : Type u} {G : Type v} [CommRing k] [Group G]
 def stabilizer {V : Type*} [AddCommGroup V] [Module k V] (ρ : Representation k G V) (v : V) :
     Subgroup G where
   carrier := {g | ρ g v = v}
-  one_mem' := by simp
-  mul_mem' {a b} ha hb := by
-    simp only [Set.mem_ofPred_eq] at *
-    rw [map_mul, Module.End.mul_apply, hb, ha]
-  inv_mem' {a} ha := by
-    simp only [Set.mem_ofPred_eq] at *
-    calc ρ a⁻¹ v = ρ a⁻¹ (ρ a v) := by rw [ha]
-      _ = v := by rw [← Module.End.mul_apply, ← map_mul, inv_mul_cancel, map_one,
-            Module.End.one_apply]
+  one_mem' := by exact (Representation.stabilizer ρ v).one_mem
+  mul_mem' := by exact (Representation.stabilizer ρ v).mul_mem
+  inv_mem' := by exact (Representation.stabilizer ρ v).inv_mem
 
 @[simp]
 theorem mem_stabilizer {V : Type*} [AddCommGroup V] [Module k V] (ρ : Representation k G V)
