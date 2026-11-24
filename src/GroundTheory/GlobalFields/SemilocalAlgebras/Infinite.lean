@@ -69,22 +69,15 @@ theorem det_blockDiagonal' {R ι : Type*} [CommRing R] [Fintype ι] [DecidableEq
     (Matrix.blockDiagonal' M).det = ∏ i, (M i).det := by
   classical
   let _ : LinearOrder ι := LinearOrder.lift' (Fintype.equivFin ι) (Fintype.equivFin ι).injective
-  rw [(Matrix.blockTriangular_blockDiagonal' M).det]
-  have hblock : ∀ a, ((Matrix.blockDiagonal' M).toSquareBlock Sigma.fst a).det = (M a).det := by
-    intro a
-    let e : κ a ≃ {x : (i : ι) × κ i // x.1 = a} :=
-      { toFun := fun x => ⟨⟨a, x⟩, rfl⟩
-        invFun := fun x => x.2 ▸ x.1.2
-        left_inv := fun x => rfl
-        right_inv := by rintro ⟨⟨i, x⟩, rfl⟩; rfl }
-    rw [← Matrix.det_submatrix_equiv_self e]
-    congr 1
-    ext x y
-    simp [Matrix.toSquareBlock, Matrix.toSquareBlockProp, e, Matrix.blockDiagonal'_apply_eq]
-  simp_rw [hblock]
-  refine Finset.prod_subset (Finset.subset_univ _) fun a _ ha => ?_
-  have : IsEmpty (κ a) := ⟨fun x => ha (Finset.mem_image.2 ⟨⟨a, x⟩, Finset.mem_univ _, rfl⟩)⟩
-  exact Matrix.det_isEmpty
+  rw [(Matrix.blockTriangular_blockDiagonal' M).det_fintype]
+  refine Finset.prod_congr rfl fun k _ ↦ ?_
+  have h : (Matrix.blockDiagonal' M).toSquareBlock Sigma.fst k =
+      (M k).submatrix (Equiv.sigmaSubtype k) (Equiv.sigmaSubtype k) := by
+    ext ⟨⟨i, a⟩, hi⟩ ⟨⟨j, b⟩, hj⟩
+    dsimp only at hi hj
+    subst hi hj
+    simp [Matrix.toSquareBlock_def, Equiv.sigmaSubtype]
+  rw [h, Matrix.det_submatrix_equiv_self]
 
 end Matrix
 
