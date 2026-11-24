@@ -70,30 +70,16 @@ section krull
 variable {F Ω : Type*} [Field F] [Field Ω] [Algebra F Ω] [Algebra.IsIntegral F Ω]
 
 theorem isOpen_setOf_apply (x : Ω) (P : Ω → Prop) : IsOpen {τ : Ω ≃ₐ[F] Ω | P (τ x)} := by
-  have hx : IsIntegral F x := Algebra.IsIntegral.isIntegral x
-  haveI : FiniteDimensional F (IntermediateField.adjoin F {x}) :=
-    IntermediateField.adjoin.finiteDimensional hx
-  have hH : IsOpen ((IntermediateField.adjoin F {x}).fixingSubgroup : Set (Ω ≃ₐ[F] Ω)) :=
-    IntermediateField.fixingSubgroup_isOpen _
+  let H := MulAction.stabilizer (Ω ≃ₐ[F] Ω) x
   rw [isOpen_iff_forall_mem_open]
   intro τ hτ
-  refine ⟨(fun σ => τ⁻¹ * σ) ⁻¹' ((IntermediateField.adjoin F {x}).fixingSubgroup : Set (Ω ≃ₐ[F] Ω)),
-    ?_, ?_, ?_⟩
-  · intro σ hσ
-    have hσ' : τ⁻¹ * σ ∈ (IntermediateField.adjoin F {x}).fixingSubgroup := hσ
-    rw [IntermediateField.mem_fixingSubgroup_iff] at hσ'
-    have h1 := hσ' x (IntermediateField.mem_adjoin_simple_self F x)
-    have h2 : σ x = τ x := by
-      calc σ x = (τ * (τ⁻¹ * σ)) x := by rw [mul_inv_cancel_left]
-        _ = τ ((τ⁻¹ * σ) x) := by rw [AlgEquiv.mul_apply]
-        _ = τ x := by rw [h1]
-    show P (σ x)
-    rw [h2]
+  refine ⟨τ • (H : Set _), ?_, (stabilizer_isOpen_of_isIntegral (K := F) x).leftCoset τ, ?_⟩
+  · rintro _ ⟨σ, hσ, rfl⟩
+    have hfix : σ x = x := MulAction.mem_stabilizer_iff.mp hσ
+    change P ((τ * σ) x)
+    rw [AlgEquiv.mul_apply, hfix]
     exact hτ
-  · exact hH.preimage (continuous_const.mul continuous_id)
-  · show τ⁻¹ * τ ∈ (IntermediateField.adjoin F {x}).fixingSubgroup
-    rw [inv_mul_cancel]
-    exact one_mem _
+  · exact ⟨1, H.one_mem, mul_one τ⟩
 
 theorem isClosed_setOf_apply (x : Ω) (P : Ω → Prop) : IsClosed {τ : Ω ≃ₐ[F] Ω | P (τ x)} := by
   rw [← isOpen_compl_iff]
