@@ -58,27 +58,14 @@ variable {O : Type*} [CommRing O]
 
 theorem length_le_of_exact (f : A →ₗ[O] B) (g : B →ₗ[O] C) (h : Function.Exact f g) :
     Module.length O B ≤ Module.length O A + Module.length O C := by
-  have h1 : Module.length O B =
-      Module.length O (LinearMap.ker g) + Module.length O (LinearMap.range g) :=
-    Module.length_eq_add_of_exact (LinearMap.ker g).subtype g.rangeRestrict
-      (Submodule.injective_subtype _) g.surjective_rangeRestrict (by
-        intro x
-        constructor
-        · intro hx
-          refine ⟨⟨x, ?_⟩, rfl⟩
-          have := congrArg Subtype.val hx
-          simpa using this
-        · rintro ⟨y, rfl⟩
-          apply Subtype.ext
-          simp)
-  have h2 : Module.length O (LinearMap.ker g) ≤ Module.length O A := by
-    have hk : LinearMap.ker g = LinearMap.range f := (LinearMap.exact_iff.mp h)
-    rw [hk]
-    exact Module.length_le_of_surjective f.rangeRestrict f.surjective_rangeRestrict
-  have h3 : Module.length O (LinearMap.range g) ≤ Module.length O C :=
-    Module.length_le_of_injective (LinearMap.range g).subtype (Submodule.injective_subtype _)
-  rw [h1]
-  exact add_le_add h2 h3
+  have hmid := Module.length_eq_add_of_exact (LinearMap.ker g).subtype g.rangeRestrict
+    (Submodule.injective_subtype _) g.surjective_rangeRestrict
+    (LinearMap.exact_iff.mpr (by rw [LinearMap.ker_rangeRestrict, Submodule.range_subtype]))
+  rw [hmid]
+  refine add_le_add ?_
+    (Module.length_le_of_injective (LinearMap.range g).subtype (Submodule.injective_subtype _))
+  rw [LinearMap.exact_iff.mp h]
+  exact Module.length_le_of_surjective f.rangeRestrict f.surjective_rangeRestrict
 
 end Exact
 
@@ -135,21 +122,9 @@ theorem length_hom_le (hQ : Module.length O ((O ⧸ maximalIdeal O) →ₗ[O] Q)
     obtain ⟨I, hI, ⟨e⟩⟩ := isSimpleModule_iff_quot_maximal.mp hs
     have hIm : I = maximalIdeal O := IsLocalRing.eq_maximalIdeal hI
     subst hIm
-    have hex : Function.Exact (LinearMap.lcomp O Q N.mkQ) (LinearMap.lcomp O Q N.subtype) := by
-      intro g
-      constructor
-      · intro hg
-        refine ⟨N.liftQ g ?_, ?_⟩
-        · intro x hx
-          have := LinearMap.congr_fun hg ⟨x, hx⟩
-          simpa using this
-        · ext x
-          simp
-      · rintro ⟨k, rfl⟩
-        ext x
-        have : N.mkQ (x : M) = 0 := (Submodule.Quotient.mk_eq_zero N).mpr x.2
-        show k (N.mkQ (x : M)) = 0
-        rw [this, map_zero]
+    have hex : Function.Exact (LinearMap.lcomp O Q N.mkQ) (LinearMap.lcomp O Q N.subtype) :=
+      LinearMap.exact_lcomp_of_exact_of_surjective Q
+        (LinearMap.exact_subtype_mkQ N) (Submodule.mkQ_surjective N)
     have h1 := length_le_of_exact _ _ hex
     have h2 : Module.length O ((M ⧸ N) →ₗ[O] Q) ≤ 1 := by
       rw [(LinearEquiv.congrLeft Q O e).length_eq]
