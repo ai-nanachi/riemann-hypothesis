@@ -69,8 +69,7 @@ lemma aestronglyMeasurable_inner_orbit (w v : H) :
 
 omit [MeasurableSpace G] [OpensMeasurableSpace G] in
 lemma norm_inner_orbit_le (w v : H) (g : G) : ‖⟪w, π g v⟫_ℂ‖ ≤ ‖w‖ * ‖v‖ := by
-  calc ‖⟪w, π g v⟫_ℂ‖ ≤ ‖w‖ * ‖π g v‖ := norm_inner_le_norm _ _
-    _ = ‖w‖ * ‖v‖ := by rw [norm_map]
+  simpa only [π.norm_map g v] using (norm_inner_le_norm (𝕜 := ℂ) w (π g v))
 
 lemma integrable_mul_inner_orbit (f : G →₁[μ] ℂ) (w v : H) :
     Integrable (fun g => f g * ⟪w, π g v⟫_ℂ) μ :=
@@ -116,18 +115,15 @@ lemma inner_integratedOp (f : G →₁[μ] ℂ) (w v : H) :
   rw [integratedOp, adjoint_inner_right, InnerProductSpace.continuousLinearMapOfBilin_apply]
   rfl
 
+private lemma norm_integratedOp_le (f : G →₁[μ] ℂ) : ‖π.integratedOp μ f‖ ≤ ‖f‖ := by
+  refine opNorm_le_of_re_inner_le (norm_nonneg _) fun v w hv hw => ?_
+  rw [inner_re_symm, inner_integratedOp]
+  exact (RCLike.re_le_norm _).trans (by
+    simpa only [hv, hw, mul_one] using π.norm_integral_mul_inner_orbit_le μ f w v)
+
 lemma norm_integratedOp_apply_le (f : G →₁[μ] ℂ) (v : H) :
-    ‖π.integratedOp μ f v‖ ≤ ‖f‖ * ‖v‖ := by
-  set x := π.integratedOp μ f v
-  have h := π.norm_integral_mul_inner_orbit_le μ f x v
-  rw [← inner_integratedOp] at h
-  have h' : ‖x‖ * ‖x‖ ≤ ‖x‖ * (‖f‖ * ‖v‖) := by
-    have e : ‖⟪x, x⟫_ℂ‖ = ‖x‖ * ‖x‖ := by rw [inner_self_eq_norm_sq_to_K]; simp [sq]
-    rw [e] at h
-    linarith
-  rcases eq_or_lt_of_le (norm_nonneg x) with h0 | hpos
-  · rw [← h0]; positivity
-  · exact le_of_mul_le_mul_left h' hpos
+    ‖π.integratedOp μ f v‖ ≤ ‖f‖ * ‖v‖ :=
+  (le_opNorm _ _).trans (mul_le_mul_of_nonneg_right (π.norm_integratedOp_le μ f) (norm_nonneg _))
 
 noncomputable def integrated : (G →₁[μ] ℂ) →L[ℂ] (H →L[ℂ] H) :=
   LinearMap.mkContinuous
@@ -146,8 +142,9 @@ noncomputable def integrated : (G →₁[μ] ℂ) →L[ℂ] (H →L[ℂ] H) :=
         refine integral_congr_ae ((Lp.coeFn_smul c f).mono fun g hg => ?_)
         simp only [hg, Pi.smul_apply, smul_eq_mul, mul_assoc] }
     1 (fun f => by
+      change ‖π.integratedOp μ f‖ ≤ 1 * ‖f‖
       rw [one_mul]
-      exact opNorm_le_bound _ (norm_nonneg _) fun v => π.norm_integratedOp_apply_le μ f v)
+      exact π.norm_integratedOp_le μ f)
 
 theorem inner_integrated (f : G →₁[μ] ℂ) (w v : H) :
     ⟪w, π.integrated μ f v⟫_ℂ = ∫ g, f g * ⟪w, π g v⟫_ℂ ∂μ :=
@@ -158,7 +155,7 @@ theorem norm_integrated_apply_le (f : G →₁[μ] ℂ) (v : H) :
   π.norm_integratedOp_apply_le μ f v
 
 theorem norm_integrated_le (f : G →₁[μ] ℂ) : ‖π.integrated μ f‖ ≤ ‖f‖ :=
-  opNorm_le_bound _ (norm_nonneg _) fun v => π.norm_integrated_apply_le μ f v
+  π.norm_integratedOp_le μ f
 
 theorem integrated_apply_eq_integral (f : G →₁[μ] ℂ) (v : H)
     (hint : Integrable (fun g => f g • π g v) μ) :
