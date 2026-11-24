@@ -59,12 +59,8 @@ abbrev IdeleGroup : Type _ := (𝔸[K])ˣ
 namespace IdeleGroup
 
 def prodEquiv :
-    IdeleGroup K ≃ₜ* (InfiniteAdeleRing K)ˣ × (FiniteAdeleRing (𝓞 K) K)ˣ where
-  toMulEquiv := MulEquiv.prodUnits
-  continuous_toFun := (Homeomorph.prodUnits (α := InfiniteAdeleRing K)
-    (β := FiniteAdeleRing (𝓞 K) K)).continuous_toFun
-  continuous_invFun := (Homeomorph.prodUnits (α := InfiniteAdeleRing K)
-    (β := FiniteAdeleRing (𝓞 K) K)).continuous_invFun
+    IdeleGroup K ≃ₜ* (InfiniteAdeleRing K)ˣ × (FiniteAdeleRing (𝓞 K) K)ˣ :=
+  ContinuousMulEquiv.prodUnits (InfiniteAdeleRing K) (FiniteAdeleRing (𝓞 K) K)
 
 def toInfinite : IdeleGroup K →* (InfiniteAdeleRing K)ˣ :=
   (MonoidHom.fst _ _).comp (prodEquiv K).toMulEquiv.toMonoidHom
@@ -85,10 +81,8 @@ def diagonal : Kˣ →* IdeleGroup K :=
 theorem coe_diagonal (x : Kˣ) : ((diagonal K x : IdeleGroup K) : 𝔸[K]) = algebraMap K 𝔸[K] x :=
   rfl
 
-theorem diagonal_injective : Function.Injective (diagonal K) := by
-  intro x y h
-  ext
-  exact AdeleRing.algebraMap_injective (𝓞 K) K (congrArg Units.val h)
+theorem diagonal_injective : Function.Injective (diagonal K) :=
+  Units.map_injective (AdeleRing.algebraMap_injective (𝓞 K) K)
 
 end IdeleGroup
 
@@ -118,14 +112,9 @@ section Finite
 variable {K}
 
 
-open Classical in
 def finiteAdeleSingle (v : HeightOneSpectrum (𝓞 K)) :
-    v.adicCompletion K →* FiniteAdeleRing (𝓞 K) K where
-  toFun x := RestrictedProduct.mulSingle
-    (fun w : HeightOneSpectrum (𝓞 K) ↦ w.adicCompletionIntegers K) v x
-  map_one' := Subtype.ext (Pi.mulSingle_one (M := fun w : HeightOneSpectrum (𝓞 K) ↦
-    w.adicCompletion K) v)
-  map_mul' x y := Subtype.ext (Pi.mulSingle_mul v x y)
+    v.adicCompletion K →* FiniteAdeleRing (𝓞 K) K :=
+  FiniteAdeleRing.ofAdicCompletion K v
 
 open Classical in
 theorem finiteAdeleSingle_apply (v w : HeightOneSpectrum (𝓞 K)) (x : v.adicCompletion K) :
