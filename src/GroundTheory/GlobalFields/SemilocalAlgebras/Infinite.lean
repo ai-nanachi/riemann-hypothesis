@@ -207,14 +207,10 @@ theorem tensorPiHom_surjective : Function.Surjective (tensorPiHom (L := L) v) :=
     refine ⟨1 ⊗ₜ l, ?_⟩
     ext w
     simp [f, AbsoluteValue.Completion.algebraMap_def, WithAbs.algebraMap_right_apply]
-  have huniv : (LinearMap.range f : Set (PiPlacesOver (L := L) v)) = Set.univ := by
-    refine Set.eq_univ_of_univ_subset ?_
-    rw [← (denseRange_algebraMap_piPlacesOver v).closure_range]
-    exact closure_minimal hsub hclosed
-  intro y
-  have hy : y ∈ (LinearMap.range f : Set (PiPlacesOver (L := L) v)) := huniv ▸ Set.mem_univ y
-  obtain ⟨x, hx⟩ := hy
-  exact ⟨x, hx⟩
+  have hd : Dense (LinearMap.range f : Set (PiPlacesOver (L := L) v)) :=
+    (denseRange_algebraMap_piPlacesOver v).mono hsub
+  change Function.Surjective f
+  exact Set.range_eq_univ.mp (hclosed.closure_eq.symm.trans hd.closure_eq)
 
 theorem tensorPiHom_bijective : Function.Bijective (tensorPiHom (L := L) v) := by
   refine ⟨?_, tensorPiHom_surjective v⟩
