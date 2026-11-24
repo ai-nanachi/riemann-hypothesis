@@ -3,6 +3,7 @@ module
 public import Mathlib.Algebra.Algebra.Operations
 public import Mathlib.LinearAlgebra.Matrix.Defs
 public import Mathlib.RingTheory.LocalRing.MaximalIdeal.Defs
+import Lemmata.FirstBlockLemmaG.Imports
 import Mathlib.Algebra.Order.Floor.Extended
 import Mathlib.Algebra.Order.Floor.Semifield
 import Mathlib.Algebra.Order.Interval.Basic
@@ -77,16 +78,8 @@ theorem goal1 (O : Type) [CommRing O] [IsLocalRing O] (U L : Ideal O)
       Ideal.mul_mem_mul (U.mul_mem_right _ (hU _ _ (Fin.castSucc_lt_last i)))
         (hL' _ _ (Fin.castSucc_lt_last i))
     have hAd : ∀ i : Fin n, IsUnit (g i.castSucc i.castSucc
-        - g i.castSucc (Fin.last n) * u * g (Fin.last n) i.castSucc) := by
-      intro i
-      have h2 := hd i.castSucc
-      rw [show g i.castSucc i.castSucc = (g i.castSucc i.castSucc
-        - g i.castSucc (Fin.last n) * u * g (Fin.last n) i.castSucc)
-        + g i.castSucc (Fin.last n) * u * g (Fin.last n) i.castSucc by ring] at h2
-      rcases IsLocalRing.isUnit_or_isUnit_of_isUnit_add h2 with h | h
-      · exact h
-      · exact absurd h (mem_nonunits_iff.mp ((IsLocalRing.mem_maximalIdeal _).mp
-          (hL (Ideal.mul_le_right (hcorr i)))))
+        - g i.castSucc (Fin.last n) * u * g (Fin.last n) i.castSucc) := fun i =>
+      Bl.FirstBlockLemmaG.goal1 (hd i.castSucc) (hL (Ideal.mul_le_right (hcorr i)))
     have hAU : ∀ i j : Fin n, i < j → g i.castSucc j.castSucc
         - g i.castSucc (Fin.last n) * u * g (Fin.last n) j.castSucc ∈ U := by
       intro i j hij
