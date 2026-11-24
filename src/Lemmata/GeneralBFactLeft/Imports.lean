@@ -68,45 +68,32 @@ theorem goal1 :
   intro k _ _ t m e hd
   by_cases hc : ringChar k = 2
   · have h2 : (2 : k) = 0 := by
-      have := ringChar.Nat.cast_ringChar (R := k)
-      rwa [hc, Nat.cast_ofNat] at this
+      simpa only [hc, Nat.cast_ofNat] using ringChar.Nat.cast_ringChar (R := k)
     have h4 : (4 : k) = 0 := by
-      have : (4 : k) = 2 * 2 := by norm_num
-      rw [this, h2, zero_mul]
-    rw [h4, zero_mul, sub_zero] at hd
-    have ht : t ≠ 0 := fun h => hd (by rw [h]; ring)
+      rw [show (4 : k) = 2 * 2 by norm_num, h2, zero_mul]
+    have ht : t ≠ 0 := fun h => hd (by simp [h, h4])
     by_cases hm : m = 0
     · refine ⟨1, (e - 1) / t, ?_⟩
       rw [hm]
       field_simp
       ring
-    · obtain ⟨r, hr⟩ := FiniteField.isSquare_of_char_two hc (e / m)
-      refine ⟨0, r, ?_⟩
-      have : r ^ 2 = e / m := by rw [hr]; ring
-      rw [this]
-      field_simp
-      ring
+    · obtain ⟨r, hr⟩ := (FiniteField.isSquare_of_char_two hc (e / m)).exists_sq
+      exact ⟨0, r, by simpa [← hr] using mul_div_cancel₀ e hm⟩
   · have h2 : (2 : k) ≠ 0 := Ring.two_ne_zero hc
     have h4 : (4 : k) ≠ 0 := by
-      have : (4 : k) = 2 * 2 := by norm_num
-      rw [this]; exact mul_ne_zero h2 h2
-    set D : k := m - t ^ 2 / 4 with hD
-    have hD0 : D ≠ 0 := by
-      intro h0
-      apply hd
-      have : t ^ 2 - 4 * m = -4 * D := by rw [hD]; field_simp; ring
-      rw [this, h0, mul_zero]
-    have hf : Polynomial.degree (Polynomial.X ^ 2 - Polynomial.C e : Polynomial k) = 2 := by
-      rw [Polynomial.degree_sub_C] <;> rw [Polynomial.degree_X_pow] <;> norm_num
-    have hg : Polynomial.degree (Polynomial.C D * Polynomial.X ^ 2 : Polynomial k) = 2 := by
-      rw [Polynomial.degree_C_mul_X_pow 2 hD0]; rfl
-    obtain ⟨a, b, hab⟩ := FiniteField.exists_root_sum_quadratic hf hg
-      (FiniteField.odd_card_of_char_ne_two hc)
+      rw [show (4 : k) = 2 * 2 by norm_num]
+      exact mul_ne_zero h2 h2
+    let D : k := -(t ^ 2 - 4 * m) / 4
+    have hD : D ≠ 0 := div_ne_zero (neg_ne_zero.mpr hd) h4
+    obtain ⟨a, b, hab⟩ := FiniteField.exists_root_sum_quadratic
+      (Polynomial.degree_X_pow_sub_C (by decide : 0 < 2) e)
+      (Polynomial.degree_C_mul_X_pow 2 hD) (FiniteField.odd_card_of_char_ne_two hc)
     simp only [Polynomial.eval_sub, Polynomial.eval_pow, Polynomial.eval_X, Polynomial.eval_C,
       Polynomial.eval_mul] at hab
     refine ⟨a - t * b / 2, b, ?_⟩
     have key : a ^ 2 + D * b ^ 2 = e := by linear_combination hab
-    rw [← key, hD]
+    rw [← key]
+    dsimp [D]
     field_simp
     ring
 
