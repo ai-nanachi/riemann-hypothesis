@@ -67,26 +67,17 @@ private lemma aux (f : ℝ → ℂ) (hc : Continuous f)
     (hm : ∀ s t : ℝ, f (s + t) = f s * f t) (hn : ∀ s, ‖f s‖ = 1) :
     ∃ a : ℂ, ∀ s : ℝ, f s = Complex.exp (a * s) := by
   have h0 : f 0 = 1 := by
-    have h := hm 0 0
-    simp only [add_zero] at h
-    have hne : f 0 ≠ 0 := by
-      intro h'
-      have h2 := hn 0
-      rw [h', norm_zero] at h2
-      exact zero_ne_one h2
-    have h3 : f 0 * 1 = f 0 * f 0 := by rw [mul_one]; exact h
-    exact (mul_left_cancel₀ hne h3).symm
+    have hne : f 0 ≠ 0 := norm_pos_iff.mp (by rw [hn]; exact zero_lt_one)
+    apply mul_left_cancel₀ hne
+    simpa only [add_zero, mul_one] using (hm 0 0).symm
   set F : ℝ → ℂ := fun x => ∫ t in (0:ℝ)..x, f t with hF
   have hFd : ∀ x, HasDerivAt F (f x) x := fun x => (hc.integral_hasStrictDerivAt 0 x).hasDerivAt
-  obtain ⟨δ, hδ⟩ : ∃ δ, F δ ≠ 0 := by
-    by_contra hcon
-    simp only [not_exists, ne_eq, not_not] at hcon
-    have hF0 : F = fun _ => (0:ℂ) := funext hcon
-    have h1 := hFd 0
-    rw [hF0] at h1
-    have h4 := h1.unique (hasDerivAt_const (0:ℝ) (0:ℂ))
-    rw [h0] at h4
-    exact one_ne_zero h4
+  have hFne : F ≠ fun _ => (0 : ℂ) := by
+    intro e
+    have hd := hFd 0
+    rw [e, h0] at hd
+    exact one_ne_zero (hd.unique (hasDerivAt_const (0 : ℝ) (0 : ℂ)))
+  obtain ⟨δ, hδ⟩ := Function.ne_iff.mp hFne
   have key : ∀ s, f s * F δ = F (s + δ) - F s := by
     intro s
     simp only [hF]
