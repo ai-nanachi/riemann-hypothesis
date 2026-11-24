@@ -78,12 +78,8 @@ noncomputable def dC (d₁ d₂ : ℝ) (h₁ : 0 < d₁) (h₂ : 0 < d₂) : GL2
 
 abbrev U2 : Type := unitaryGroup (Fin 2) ℂ
 
-theorem det_ne_zero_of_U2 (k : U2) : ((k : Matrix (Fin 2) (Fin 2) ℂ)).det ≠ 0 := by
-  intro h
-  have h1 : (star (k : Matrix (Fin 2) (Fin 2) ℂ) * k).det = 1 := by
-    rw [Matrix.UnitaryGroup.star_mul_self, Matrix.det_one]
-  rw [Matrix.det_mul, h, mul_zero] at h1
-  exact zero_ne_one h1
+theorem det_ne_zero_of_U2 (k : U2) : ((k : Matrix (Fin 2) (Fin 2) ℂ)).det ≠ 0 :=
+  (Matrix.UnitaryGroup.det_isUnit k).ne_zero
 
 noncomputable def kC : U2 →* GL2C where
   toFun k := toGLC (k : Matrix (Fin 2) (Fin 2) ℂ) (det_ne_zero_of_U2 k)
@@ -100,23 +96,17 @@ theorem coe_kC_inv (k : U2) :
   Units.inv_eq_of_mul_eq_one_right (Matrix.mem_unitaryGroup_iff.1 k.2)
 
 theorem continuous_kC : Continuous kC := by
-  have hval : Continuous fun k : U2 => ((kC k : GL (Fin 2) ℂ)) := by
-    refine Units.continuous_iff.2 ⟨continuous_subtype_val, ?_⟩
-    have e : (fun k : U2 => ((((kC k : GL2C) : GL (Fin 2) ℂ)⁻¹ : GL (Fin 2) ℂ) : Matrix (Fin 2) (Fin 2) ℂ)) =
-        fun k : U2 => star (k : Matrix (Fin 2) (Fin 2) ℂ) := by
-      funext k; exact coe_kC_inv k
-    rw [e]
-    exact continuous_star.comp continuous_subtype_val
-  exact continuous_induced_rng.2 hval
+  refine continuous_induced_rng.2 (Units.continuous_iff.2 ⟨continuous_subtypeVal, ?_⟩)
+  simpa only [Function.comp_def, coe_kC_inv] using
+    continuous_star.comp (continuous_subtypeVal :
+      Continuous ((↑) : U2 → Matrix (Fin 2) (Fin 2) ℂ))
 
 noncomputable def tC (a b : ℝ) : U2 :=
   ⟨!![Complex.exp (a * I), 0; 0, Complex.exp (b * I)], by
-    rw [Matrix.mem_unitaryGroup_iff]
-    have h : ∀ r : ℝ, Complex.exp (r * I) * (starRingEnd ℂ) (Complex.exp (r * I)) = 1 := fun r => by
-      rw [← Complex.exp_conj, ← Complex.exp_add]
-      simp
-    ext i j; fin_cases i <;> fin_cases j <;>
-      simp [Matrix.mul_apply, Fin.sum_univ_two, Matrix.star_eq_conjTranspose, h]⟩
+    rw [← Matrix.diagonal_vec2, Matrix.diagonal_mem_unitary, Pi.mem_unitary_iff]
+    intro i
+    fin_cases i <;>
+      simp [Unitary.mem_iff, ← Complex.exp_conj, ← Complex.exp_add]⟩
 
 @[simp] theorem coe_tC (a b : ℝ) : ((tC a b : U2) : Matrix (Fin 2) (Fin 2) ℂ) =
     !![Complex.exp (a * I), 0; 0, Complex.exp (b * I)] := rfl
