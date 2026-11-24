@@ -151,6 +151,10 @@ variable {N : ℕ}
 theorem sphMonom_sqN_nonneg (z : Fin N → ℂ) : 0 ≤ sqN z :=
   Finset.sum_nonneg fun i _ => sq_nonneg _
 
+private theorem sphMonom_sqN_eq_zero (z : Fin N → ℂ) : sqN z = 0 ↔ z = 0 := by
+  rw [← Real.sqrt_eq_zero (sphMonom_sqN_nonneg z), ← norm_sphMonomL, norm_eq_zero]
+  exact (sphMonomL N).toLinearEquiv.map_eq_zero_iff
+
 theorem sphMonom_key [NeZero N] {k : ℕ} (f : (Fin N → ℂ) → ℂ)
     (hf : ∀ (r : ℝ) (z : Fin N → ℂ), f (r • z) = (r : ℂ) ^ k * f z) :
     (∫ z, f z * (Real.exp (-sqN z) : ℂ)) *
@@ -160,17 +164,10 @@ theorem sphMonom_key [NeZero N] {k : ℕ} (f : (Fin N → ℂ) → ℂ)
   haveI : Nonempty (Fin N) := ⟨⟨0, Nat.pos_of_ne_zero (NeZero.ne N)⟩⟩
   have hzs : ∀ z : Fin N → ℂ, z = Real.sqrt (sqN z) • ((Real.sqrt (sqN z))⁻¹ • z) := by
     intro z
-    by_cases hs : Real.sqrt (sqN z) = 0
-    · have h0 : sqN z = 0 := by
-        have := Real.sqrt_eq_zero'.1 hs
-        linarith [sphMonom_sqN_nonneg z]
-      have hz : z = 0 := by
-        funext i
-        have := (Finset.sum_eq_zero_iff_of_nonneg (fun j _ => sq_nonneg ‖z j‖)).1 h0 i (Finset.mem_univ i)
-        simpa using this
-      rw [hs, zero_smul]
-      exact hz
-    · rw [smul_inv_smul₀ hs]
+    by_cases hz : z = 0
+    · simp [hz]
+    rw [smul_inv_smul₀]
+    exact (Real.sqrt_ne_zero (sphMonom_sqN_nonneg z)).mpr ((sphMonom_sqN_eq_zero z).not.mpr hz)
   have hhom : ∀ z, f z = ((Real.sqrt (sqN z) : ℝ) : ℂ) ^ k * f ((Real.sqrt (sqN z))⁻¹ • z) := by
     intro z
     conv_lhs => rw [hzs z]
@@ -263,12 +260,7 @@ theorem sphMonom_sqN_smul (c : ℂ) (z : Fin N → ℂ) : sqN (c • z) = ‖c�
 
 theorem sphMonom_sqN_normalize (z : Fin N → ℂ) (hz : z ≠ 0) :
     sqN ((((Real.sqrt (sqN z))⁻¹ : ℝ) : ℂ) • z) = 1 := by
-  have hs : sqN z ≠ 0 := by
-    intro h
-    apply hz
-    funext i
-    have := (Finset.sum_eq_zero_iff_of_nonneg (fun j _ => sq_nonneg ‖z j‖)).1 h i (Finset.mem_univ i)
-    simpa using this
+  have hs : sqN z ≠ 0 := (sphMonom_sqN_eq_zero z).not.mpr hz
   rw [sphMonom_sqN_smul, Complex.norm_real, Real.norm_eq_abs, sq_abs, inv_pow,
     Real.sq_sqrt (sphMonom_sqN_nonneg z), inv_mul_cancel₀ hs]
 
