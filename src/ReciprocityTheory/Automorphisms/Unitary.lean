@@ -102,24 +102,15 @@ noncomputable def conjAL : AL L →+* AL L :=
   (Algebra.TensorProduct.map (IsCMField.complexConj L).toAlgHom (AlgHom.id L⁺ (AFplus L))).toRingHom
 
 theorem conjAL_conjAL (x : AL L) : conjAL L (conjAL L x) = x := by
-  have hc : ∀ y : L, IsCMField.complexConj L (IsCMField.complexConj L y) = y := by
-    intro y
-    have h := pow_orderOf_eq_one (IsCMField.complexConj L)
-    rw [IsCMField.orderOf_complexConj, pow_two] at h
-    simpa [AlgEquiv.mul_apply] using DFunLike.congr_fun h y
-  induction x using TensorProduct.induction_on with
-  | zero => simp
-  | tmul a b => simp [conjAL, hc]
-  | add x y hx hy => simp only [map_add (f := _), hx, hy]
+  let c := (IsCMField.complexConj L).toAlgHom
+  have hc : c.comp c = AlgHom.id L⁺ L := AlgHom.ext (IsCMField.complexConj_apply_apply L)
+  let f := Algebra.TensorProduct.map c (AlgHom.id L⁺ (AFplus L))
+  change (f.comp f) x = x
+  simp [f, ← Algebra.TensorProduct.map_comp, hc]
 
 theorem complexConj_invol (x : L) :
     (IsCMField.complexConj L : L →+* L) ((IsCMField.complexConj L : L →+* L) x) = x := by
-  have hc : ∀ y : L, IsCMField.complexConj L (IsCMField.complexConj L y) = y := by
-    intro y
-    have h := pow_orderOf_eq_one (IsCMField.complexConj L)
-    rw [IsCMField.orderOf_complexConj, pow_two] at h
-    simpa [AlgEquiv.mul_apply] using DFunLike.congr_fun h y
-  simpa using hc x
+  exact IsCMField.complexConj_apply_apply L x
 
 structure SplitPlace where
   v : HeightOneSpectrum (𝓞 L⁺)
