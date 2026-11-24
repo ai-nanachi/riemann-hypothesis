@@ -59,34 +59,18 @@ def IsProPGroup (p : ℕ) (G : Type*) [Group G] [TopologicalSpace G] : Prop :=
 
 theorem isProPGroup_iff {p : ℕ} :
     IsProPGroup p G ↔ ∀ U : OpenNormalSubgroup G, ∀ g : G, ∃ k : ℕ, g ^ p ^ k ∈ U := by
-  refine forall_congr' fun U => ⟨fun h g => ?_, fun h x => ?_⟩
-  · obtain ⟨k, hk⟩ := h (g : G ⧸ (U : Subgroup G))
-    refine ⟨k, ?_⟩
-    rw [← QuotientGroup.mk_pow, QuotientGroup.eq_one_iff] at hk
-    exact hk
-  · induction x using QuotientGroup.induction_on with
-    | H g =>
-      obtain ⟨k, hk⟩ := h g
-      exact ⟨k, by rw [← QuotientGroup.mk_pow, QuotientGroup.eq_one_iff]; exact hk⟩
-
+  refine forall_congr' fun U => ?_
+  rw [isPGroup_iff_pow_pow_eq_one, (QuotientGroup.mk'_surjective (U : Subgroup G)).forall]
+  simp only [QuotientGroup.mk'_apply, ← QuotientGroup.mk_pow, QuotientGroup.eq_one_iff]
+  rfl
 
 omit [TopologicalSpace G] in
 theorem isPGroup_map_mk_iff {p : ℕ} (H U : Subgroup G) [U.Normal] :
     IsPGroup p (H.map (QuotientGroup.mk' U)) ↔ ∀ h ∈ H, ∃ k : ℕ, h ^ p ^ k ∈ U := by
-  constructor
-  · intro hp h hh
-    obtain ⟨k, hk⟩ := hp ⟨QuotientGroup.mk' U h, Subgroup.mem_map_of_mem _ hh⟩
-    refine ⟨k, ?_⟩
-    have hk' := congrArg Subtype.val hk
-    simp only [Subgroup.coe_pow, OneMemClass.coe_one, QuotientGroup.mk'_apply] at hk'
-    rwa [← QuotientGroup.mk_pow, QuotientGroup.eq_one_iff] at hk'
-  · rintro h ⟨x, hx⟩
-    obtain ⟨g, hg, rfl⟩ := Subgroup.mem_map.mp hx
-    obtain ⟨k, hk⟩ := h g hg
-    refine ⟨k, Subtype.ext ?_⟩
-    simp only [Subgroup.coe_pow, OneMemClass.coe_one, QuotientGroup.mk'_apply]
-    rw [← QuotientGroup.mk_pow, QuotientGroup.eq_one_iff]
-    exact hk
+  rw [isPGroup_iff_pow_pow_eq_one, ((QuotientGroup.mk' U).subgroupMap_surjective H).forall]
+  simp only [← map_pow, Subtype.ext_iff, OneMemClass.coe_one]
+  change (∀ h : H, ∃ k : ℕ, ((↑(h ^ p ^ k) : G) : G ⧸ U) = 1) ↔ _
+  simp only [Subgroup.coe_pow, QuotientGroup.eq_one_iff, Subtype.forall]
 
 variable [IsTopologicalGroup G] [CompactSpace G] [TotallyDisconnectedSpace G]
 
