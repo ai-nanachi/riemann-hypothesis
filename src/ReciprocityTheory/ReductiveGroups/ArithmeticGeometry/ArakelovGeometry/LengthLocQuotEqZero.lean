@@ -114,52 +114,24 @@ theorem length_loc_step (I q : Ideal R) (f : R) (hq : ∀ g, g ∈ q ↔ g * f �
 theorem length_loc_quot_eq_zero (q P : Ideal R) [P.IsPrime] (h : ¬ q ≤ P) :
     Module.length (Localization.AtPrime P) (LocalizedModule P.primeCompl (R ⧸ q)) = 0 := by
   obtain ⟨s, hsq, hsP⟩ := IsConcreteLE.not_le_iff_exists.mp h
-  rw [Module.length_eq_zero_iff]
-  refine subsingleton_of_forall_eq 0 (fun z => ?_)
-  induction z using LocalizedModule.induction_on with
-  | h m t =>
-    rw [← LocalizedModule.zero_mk t, LocalizedModule.mk_eq]
-    refine ⟨⟨s, hsP⟩, ?_⟩
-    rw [smul_zero, smul_zero, Submonoid.smul_def, Submonoid.smul_def]
-    obtain ⟨x, rfl⟩ := Ideal.Quotient.mk_surjective m
-    rw [Algebra.smul_def, Algebra.smul_def, Ideal.Quotient.algebraMap_eq, ← map_mul, ← map_mul,
-      Ideal.Quotient.eq_zero_iff_mem]
-    exact q.mul_mem_right _ hsq
+  rw [Module.length_eq_zero_iff, LocalizedModule.subsingleton_iff]
+  intro x
+  refine ⟨s, hsP, ?_⟩
+  obtain ⟨r, rfl⟩ := Ideal.Quotient.mk_surjective x
+  rw [Algebra.smul_def, Ideal.Quotient.algebraMap_eq, ← map_mul, Ideal.Quotient.eq_zero_iff_mem]
+  exact q.mul_mem_right _ hsq
 
 theorem length_loc_quot_self (P : Ideal R) [P.IsPrime] :
     Module.length (Localization.AtPrime P) (LocalizedModule P.primeCompl (R ⧸ P)) = 1 := by
-  rw [Module.length_eq_one_iff, isSimpleModule_iff_toSpanSingleton_surjective]
-  have hne : ∀ (r : R) (t : P.primeCompl),
-      LocalizedModule.mk (Ideal.Quotient.mk P r) t = 0 → r ∈ P := by
-    intro r t h0
-    rw [← LocalizedModule.zero_mk t, LocalizedModule.mk_eq] at h0
-    obtain ⟨u, hu⟩ := h0
-    rw [smul_zero, Submonoid.smul_def, Submonoid.smul_def, Algebra.smul_def, Algebra.smul_def,
-      Ideal.Quotient.algebraMap_eq, ← map_mul, ← map_mul, smul_zero, Ideal.Quotient.eq_zero_iff_mem] at hu
-    rcases Ideal.IsPrime.mem_or_mem ‹P.IsPrime› hu with h1 | h1
-    · exact absurd h1 u.2
-    · rcases Ideal.IsPrime.mem_or_mem ‹P.IsPrime› h1 with h2 | h2
-      · exact absurd h2 t.2
-      · exact h2
-  constructor
-  · refine ⟨⟨LocalizedModule.mk (Ideal.Quotient.mk P 1) 1, 0, fun h0 => ?_⟩⟩
-    exact ‹P.IsPrime›.ne_top ((Ideal.eq_top_iff_one P).mpr (hne 1 1 h0))
-  · intro x hx y
-    induction x using LocalizedModule.induction_on with
-    | h m t =>
-      obtain ⟨r, rfl⟩ := Ideal.Quotient.mk_surjective m
-      have hr : r ∈ P.primeCompl := fun hrP => hx (by
-        rw [(Ideal.Quotient.eq_zero_iff_mem.mpr hrP), LocalizedModule.zero_mk])
-      induction y using LocalizedModule.induction_on with
-      | h m' t' =>
-        obtain ⟨r', rfl⟩ := Ideal.Quotient.mk_surjective m'
-        refine ⟨Localization.mk (r' * t) (t' * ⟨r, hr⟩), ?_⟩
-        rw [LinearMap.toSpanSingleton_apply, LocalizedModule.mk_smul_mk, LocalizedModule.mk_eq]
-        refine ⟨1, ?_⟩
-        simp only [one_smul, Submonoid.smul_def, Submonoid.coe_mul, Algebra.smul_def,
-          Ideal.Quotient.algebraMap_eq, ← map_mul]
-        congr 1
-        ring
+  let S := Localization.AtPrime P
+  let g := Submodule.toLocalizedQuotient' S P.primeCompl (Algebra.linearMap R S) P
+  let e := (IsLocalizedModule.linearEquiv P.primeCompl g
+    (LocalizedModule.mkLinearMap P.primeCompl (R ⧸ P))).restrictScalars S
+  have h : Submodule.localized' S P.primeCompl (Algebra.linearMap R S) P = IsLocalRing.maximalIdeal S :=
+    (Ideal.localized'_eq_map S P.primeCompl P).trans Localization.AtPrime.map_eq_maximalIdeal
+  rw [← e.length_eq, (Submodule.quotEquivOfEq _ _ h).length_eq,
+    Module.length_eq_one_iff, isSimpleModule_iff_isCoatom]
+  exact Ideal.isMaximal_def.mp (IsLocalRing.maximalIdeal.isMaximal S)
 
 theorem length_loc_top (P : Ideal R) [P.IsPrime] :
     Module.length (Localization.AtPrime P) (LocalizedModule P.primeCompl (R ⧸ (⊤ : Ideal R))) = 0 := by
