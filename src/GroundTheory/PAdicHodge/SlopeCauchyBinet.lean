@@ -101,24 +101,13 @@ theorem exists_maxMinor_ne_zero_of_linearIndependent_alt {R : Type*} [CommRing R
   have ht : t.card = k := by simp [t, hcard]
   let s : KSubset n k := ⟨t, ht⟩
   refine ⟨s, ?_⟩
-  have hmem : ∀ i : Fin k, ∃ c : κ, a c = s.emb i := by
-    intro i
-    have h : s.emb i ∈ t := Finset.orderEmbOfFin_mem t ht i
-    simp only [t, Finset.mem_map, Finset.mem_univ, true_and] at h
-    obtain ⟨c, hc⟩ := h
-    exact ⟨c, hc⟩
-  choose e he using hmem
-  have he_inj : Function.Injective e := by
-    intro i j hij
-    apply s.emb.injective
-    rw [← he i, ← he j, hij]
-  have hrows : LinearIndependent K (B'.submatrix s.emb id).row := by
-    have hfam : (B'.submatrix s.emb id).row = (B'.row ∘ a) ∘ e := by
-      funext i j
-      show B' (s.emb i) j = B' (a (e i)) j
-      rw [he i]
-    rw [hfam]
-    exact hli.comp e he_inj
+  have hrange : Set.range s.emb = Set.range a := by
+    rw [show Set.range s.emb = (t : Set (Fin n)) from Finset.range_orderEmbOfFin t ht]
+    ext j
+    simp [t, Set.mem_range]
+  have hrows : LinearIndependent K (B'.submatrix s.emb id).row :=
+    (linearIndepOn_range_iff s.emb.injective B'.row).mp <|
+      hrange.symm ▸ (linearIndepOn_range_iff ha B'.row).mpr hli
   have hdet : (B'.submatrix s.emb id).det ≠ 0 := by
     have hu := Matrix.linearIndependent_rows_iff_isUnit.mp hrows
     exact ((Matrix.isUnit_iff_isUnit_det _).mp hu).ne_zero
@@ -259,16 +248,8 @@ variable {n k : ℕ}
 
 theorem linearIndependent_col_iff_mulVec_eq_zero (B : Matrix (Fin n) (Fin k) R) :
     LinearIndependent R B.col ↔ ∀ v, B *ᵥ v = 0 → v = 0 := by
-  rw [Fintype.linearIndependent_iff]
-  have key : ∀ v : Fin k → R, ∑ j, v j • B.col j = B *ᵥ v := by
-    intro v; ext i; simp [mulVec, dotProduct, Finset.sum_apply, col, mul_comm]
-  constructor
-  · intro h v hv
-    funext j
-    exact h v (by rw [key, hv]) j
-  · intro h g hg j
-    have := h g (by rw [← key, hg])
-    exact congrFun this j
+  rw [← Matrix.ker_mulVecLin_eq_bot_iff, LinearMap.ker_eq_bot]
+  exact Matrix.mulVec_injective_iff.symm
 
 theorem exists_maxMinor_ne_zero_of_linearIndependent [IsDomain R]
     (B : Matrix (Fin n) (Fin k) R) (hB : LinearIndependent R B.col) :
