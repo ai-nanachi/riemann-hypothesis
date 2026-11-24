@@ -57,21 +57,12 @@ open scoped Real
 
 theorem differentiable_cons_right {n : ℕ} (x : ℂ) :
     Differentiable ℂ (fun y : Fin n → ℂ => (Fin.cons x y : Fin (n + 1) → ℂ)) := by
-  refine differentiable_pi.2 fun i => ?_
-  refine Fin.cases ?_ (fun j => ?_) i
-  · simp only [Fin.cons_zero]
-    exact differentiable_const x
-  · simp only [Fin.cons_succ]
-    exact differentiable_pi.1 differentiable_id j
+  exact (differentiable_const x).finCons differentiable_id
 
 theorem differentiable_cons_left {n : ℕ} (y : Fin n → ℂ) :
     Differentiable ℂ (fun x : ℂ => (Fin.cons x y : Fin (n + 1) → ℂ)) := by
-  refine differentiable_pi.2 fun i => ?_
-  refine Fin.cases ?_ (fun j => ?_) i
-  · simp only [Fin.cons_zero]
-    exact differentiable_id
-  · simp only [Fin.cons_succ]
-    exact differentiable_const _
+  rw [differentiable_finCons]
+  exact ⟨differentiable_id, differentiable_const y⟩
 
 theorem mem_closedBall_pi_iff {n : ℕ} {c z : Fin n → ℂ} {r : ℝ} (hr : 0 ≤ r) :
     z ∈ closedBall c r ↔ ∀ i, z i ∈ closedBall (c i) r := by
@@ -83,14 +74,10 @@ theorem mem_ball_pi_iff {n : ℕ} {c z : Fin n → ℂ} {r : ℝ} (hr : 0 < r) :
 
 theorem norm_torusMap_sub {n : ℕ} (c : Fin n → ℂ) {r : ℝ} (hr : 0 ≤ r) (θ : Fin n → ℝ) (i : Fin n) :
     ‖torusMap c (fun _ => r) θ i - c i‖ = r := by
-  have h : torusMap c (fun _ => r) θ i - c i = (r : ℂ) * exp ((θ i : ℂ) * I) := by
-    simp only [torusMap]
-    ring
-  have h1 : ‖exp ((θ i : ℂ) * I)‖ = 1 := by
-    exact Complex.norm_exp_ofReal_mul_I _
-  have h2 : ‖(r : ℂ)‖ = r := by
-    exact Complex.norm_of_nonneg hr
-  rw [h, norm_mul, h1, h2, mul_one]
+  change ‖(torusMap c (fun _ => r) θ - c) i‖ = r
+  rw [torusMap_sub_center]
+  simp only [torusMap, Pi.zero_apply, zero_add, norm_mul, Complex.norm_of_nonneg hr,
+    Complex.norm_exp_ofReal_mul_I, mul_one]
 
 theorem torusMap_mem_closedBall {n : ℕ} (c : Fin n → ℂ) {r : ℝ} (hr : 0 ≤ r) (θ : Fin n → ℝ) :
     torusMap c (fun _ => r) θ ∈ closedBall c r := by
