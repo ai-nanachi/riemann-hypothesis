@@ -71,14 +71,16 @@ variable {C : Type} [Field C] {R : Type} [CommRing R] [Algebra R C] {v : Valuati
 
 theorem det_map_algebraMap {X : Type} [Fintype X] [DecidableEq X] (M : Matrix X X R) :
     (M.map (algebraMap R C)).det = algebraMap R C M.det := by
-  rw [RingHom.map_det]
-  rfl
+  exact (RingHom.map_det (algebraMap R C) M).symm
 
 theorem eq_one_of_le_one_of_mul_eq_one {a b : NNReal} (ha : a ≤ 1) (hb : b ≤ 1) (h : a * b = 1) :
     a = 1 := by
-  have h1 := mul_le_of_le_one_right (zero_le : (0 : NNReal) ≤ a) hb
-  rw [h] at h1
-  exact le_antisymm ha h1
+  exact eq_one_of_one_le_mul_left ha hb h.ge
+
+private lemma col_mul_map {X : Type} [Fintype X] (P : Matrix X X C) (A : Matrix X X R) (j : X) :
+    (P * A.map (algebraMap R C)).col j = ∑ i, A i j • P.col i := by
+  rw [Matrix.col_mul_eq_mulVec_col, Matrix.mulVec_eq_sum]
+  simp only [Matrix.col, Matrix.transpose_apply, Matrix.map_apply, op_smul_eq_smul, algebraMap_smul]
 
 private lemma cols_mul_lemma {X : Type} [Fintype X] [DecidableEq X] {P Q : Matrix X X C}
     (h : Submodule.span R (Set.range fun j x => Q x j) ≤
@@ -87,13 +89,9 @@ private lemma cols_mul_lemma {X : Type} [Fintype X] [DecidableEq X] {P Q : Matri
   have hc : ∀ j, ∃ c : X → R, ∑ i, c i • (fun x => P x i) = fun x => Q x j := fun j =>
     (Submodule.mem_span_range_iff_exists_fun R).1 (h (Submodule.subset_span ⟨j, rfl⟩))
   choose c hc using hc
-  refine ⟨Matrix.of fun i j => c j i, ?_⟩
-  ext x j
-  have hx := congrFun (hc j) x
-  simp only [Finset.sum_apply, Pi.smul_apply] at hx
-  rw [Matrix.mul_apply, ← hx]
-  refine Finset.sum_congr rfl fun i _ => ?_
-  simp [Algebra.smul_def, mul_comm]
+  let A : Matrix X X R := Matrix.of fun i j => c j i
+  refine ⟨A, Matrix.ext fun x j => ?_⟩
+  exact congrFun ((hc j).symm.trans (col_mul_map P A j).symm) x
 
 theorem valuation_det_eq_of_span_eq_alt (hv : v.Integers R) {X : Type} [Fintype X] [DecidableEq X]
     {P Q : Matrix X X C} (hP : IsUnit P.det)
@@ -108,10 +106,7 @@ theorem valuation_det_eq_of_span_eq_alt (hv : v.Integers R) {X : Type} [Fintype 
     rw [hB, Matrix.det_mul, det_map_algebraMap]
   have hAB : algebraMap R C A.det * algebraMap R C B.det = 1 := by
     refine mul_left_cancel₀ hP.ne_zero ?_
-    calc P.det * (algebraMap R C A.det * algebraMap R C B.det)
-        = P.det * algebraMap R C A.det * algebraMap R C B.det := (mul_assoc _ _ _).symm
-      _ = P.det := by rw [← hdQ, ← hdP]
-      _ = P.det * 1 := (mul_one _).symm
+    rw [← mul_assoc, ← hdQ, ← hdP, mul_one]
   have hvA : v (algebraMap R C A.det) = 1 :=
     eq_one_of_le_one_of_mul_eq_one (hv.map_le_one _) (hv.map_le_one _)
       (by rw [← map_mul v, hAB, map_one])
@@ -202,11 +197,8 @@ private lemma cols_le_lemma_2 {X : Type} [Fintype X] [DecidableEq X] {P Q : Matr
       Submodule.span R (Set.range fun j x => P x j) := by
   rw [Submodule.span_le]
   rintro _ ⟨j, rfl⟩
-  have hcol : (fun x => Q x j) = ∑ i, A i j • fun x => P x i := by
-    ext x
-    simp [hA, Matrix.mul_apply, Finset.sum_apply, Algebra.smul_def, mul_comm]
-  show (fun x => Q x j) ∈ Submodule.span R _
-  rw [hcol]
+  change Q.col j ∈ _
+  rw [hA, col_mul_map]
   exact Submodule.sum_mem _ fun i _ =>
     Submodule.smul_mem _ _ (Submodule.subset_span ⟨i, rfl⟩)
 
@@ -235,12 +227,7 @@ theorem inv_mem_of_valuation_eq_one (hv : v.Integers R) {X : Type} [Fintype X] [
   have hvT : v (algebraMap R C T.det) = 1 := by
     rw [hdT, map_prod]
     exact Finset.prod_eq_one fun x _ => hunit x
-  have hy : algebraMap R C T.det ≠ 0 := by
-    rw [hdT]; exact Finset.prod_ne_zero_iff.2 fun x _ => hu0 x
-  obtain ⟨s, hs⟩ := hv.exists_of_le_one
-    (show v (algebraMap R C T.det)⁻¹ ≤ 1 from le_of_eq (by rw [map_inv₀, hvT, inv_one]))
-  have hTs : T.det * s = 1 := hv.hom_inj (by rw [map_mul, hs, mul_inv_cancel₀ hy, map_one])
-  have hTu : IsUnit T.det := ⟨⟨T.det, s, hTs, by rw [mul_comm]; exact hTs⟩, rfl⟩
+  have hTu : IsUnit T.det := (hv.isUnit_iff_valuation_eq_one).mpr hvT
   have hPD : P = (Matrix.diagonal u * P) * (T⁻¹).map (algebraMap R C) := by
     rw [hT, Matrix.mul_assoc, ← Matrix.map_mul, Matrix.mul_nonsing_inv T hTu]
     simp
